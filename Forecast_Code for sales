@@ -11,6 +11,7 @@ from statsmodels.graphics.tsaplots import plot_pacf,plot_acf
 from statsmodels.tsa.seasonal import seasonal_decompose
 import warnings
 warnings.filterwarnings('ignore')
+
 data = pd.read_excel ('File name'.xlsx', sheet_name='XXXX',index_col='Month',parse_dates=True)
 data.head()
 type(data)

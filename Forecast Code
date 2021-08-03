@@ -1,0 +1,176 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import datetime as dt
+import seaborn as sns
+import os
+import pmdarima as pm
+from pmdarima import auto_arima
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+from statsmodels.graphics.tsaplots import plot_pacf,plot_acf
+from statsmodels.tsa.seasonal import seasonal_decompose
+import warnings
+warnings.filterwarnings('ignore')
+data = pd.read_excel ('File name'.xlsx', sheet_name='XXXX',index_col='Month',parse_dates=True)
+data.head()
+type(data)
+series_value=data.values
+type(series_value)
+data.describe()
+sns.set(rc={'figure.figsize':(20,5)})
+data.plot()
+data_base=pd.concat([data,data.shift(1)],axis=1)
+data_base
+data_base.columns=['Actual_Sales','Forecast_Sales']
+data_base.head()
+data_base.dropna(inplace=True)
+data_base
+data_base.head()
+from sklearn.metrics import mean_squared_error
+import numpy as np
+data_error = mean_squared_error(data_base.Actual_Sales,data_base.Forecast_Sales)
+data_error
+np.sqrt(data_error)
+
+ARIMA MODEL
+
+from statsmodels.tsa.arima_model import ARIMA
+model=ARIMA(data['Sales'],order=(1,1,1))
+model_fit=model.fit(disp=0)
+model_fit.summary()
+data['forecast']=model_fit.predict(start=10,end=103,dynamic=True)
+data[['Sales','forecast']].plot(figsize=(12,8))
+
+# Plot residual errors
+residuals = pd.DataFrame(model_fit.resid)
+fig, ax = plt.subplots(1,2)
+residuals.plot(title="Residuals", ax=ax[0])
+residuals.plot(kind='kde', title='Density', ax=ax[1])
+plt.show()
+
+# Actual vs Fitted
+model_fit.plot_predict(dynamic=False)
+plt.show()
+
+from statsmodels.tsa.stattools import acf
+
+# Create Training and Test
+
+train = data[:x]
+test = data[x:]
+
+# Build the Model 
+model = ARIMA(data['Sales'],order=(1, 1, 1))  
+fitted = model.fit(disp=-1) 
+
+# Forecast
+fc, se, conf = fitted.forecast(249, alpha=0.05)
+
+# Make as pandas series
+fc_series = pd.Series(fc, index=test.index)
+lower_series = pd.Series(conf[:, 0], index=test.index)
+upper_series = pd.Series(conf[:, 1], index=test.index)
+
+# Plot
+plt.figure(figsize=(12,5), dpi=100)
+plt.plot(train, label='training')
+plt.plot(test, label='actual')
+plt.plot(fc_series, label='forecast')
+plt.fill_between(lower_series.index, lower_series, upper_series, 
+                 color='k', alpha=.15)
+plt.title('Forecast vs Actuals')
+plt.legend(loc='upper left', fontsize=8)
+plt.show()
+
+from statsmodels.tsa.arima_model import ARIMA
+
+import pmdarima as pm
+data = pd.read_excel ('File name.xlsx', sheet_name='XXX',names=['Month','Sales'],header=0)
+model = pm.auto_arima(data.Sales, start_p=1, start_q=1,
+                      test='adf',       # use adftest to find optimal 'd'
+                      max_p=3, max_q=3, # maximum p and q
+                      m=1,              # frequency of series
+                      d=None,           # let model determine 'd'
+                      seasonal=False,   # No Seasonality
+                      start_P=0, 
+                      D=0, 
+                      trace=True,
+                      error_action='ignore',  
+                      suppress_warnings=True, 
+                      stepwise=True)
+model.summary()
+
+model.plot_diagnostics(figsize=(12,5))
+plt.show()
+
+# Forecast
+n_periods = 6
+fc, confint = model.predict(n_periods=n_periods, return_conf_int=True)
+index_of_fc = np.arange(len(data.Sales), len(data.Sales)+n_periods)
+
+# make series for plotting purpose
+fc_series = pd.Series(fc, index=index_of_fc)
+lower_series = pd.Series(confint[:, 0], index=index_of_fc)
+upper_series = pd.Series(confint[:, 1], index=index_of_fc)
+
+# Plot
+plt.plot(data.Sales)
+plt.plot(fc_series, color='darkgreen')
+plt.fill_between(lower_series.index, 
+                 lower_series, 
+                 upper_series, 
+                 color='k', alpha=.15)
+
+plt.title("Final Forecast of WWW Usage")
+plt.show()
+
+data = pd.read_excel ('File name.xlsx', sheet_name='XXX',index_col='Month',parse_dates=True)
+fig, axes = plt.subplots(2, 1, figsize=(10,5), dpi=100, sharex=True)
+
+# Usual Differencing
+axes[0].plot(data[:], label='Original Series')
+axes[0].plot(data[:].diff(1), label='Usual Differencing')
+axes[0].set_title('Usual Differencing')
+axes[0].legend(loc='upper left', fontsize=10)
+
+# Seasinal Dei
+axes[1].plot(data[:], label='Original Series')
+axes[1].plot(data[:].diff(12), label='Seasonal Differencing', color='green')
+axes[1].set_title('Seasonal Differencing')
+plt.legend(loc='upper left', fontsize=10)
+plt.suptitle('SALES', fontsize=16)
+plt.show()
+
+import pmdarima as pm
+smodel = pm.auto_arima(data.Sales, start_p=1, start_q=1,
+                      test='adf',       # use adftest to find optimal 'd'
+                      max_p=3, max_q=3, # maximum p and q
+                      m=1,              
+                      d=None,           
+                      seasonal=False,   
+                      start_P=0, 
+                      D=0, 
+                      trace=True,
+                      error_action='ignore',  
+                      suppress_warnings=True, 
+                      stepwise=True)
+smodel.summary()
+
+
+# Forecast
+n_periods = 6
+fitted, confint = smodel.predict(n_periods=n_periods, return_conf_int=True)
+index_of_fc = pd.date_range(data.index[-1], periods = n_periods, freq='MS')
+fitted_series = pd.Series(fitted, index=index_of_fc)
+lower_series = pd.Series(confint[:, 0], index=index_of_fc)
+upper_series = pd.Series(confint[:, 1], index=index_of_fc)
+
+# Plot
+plt.plot(data)
+plt.plot(fitted_series, color='darkgreen')
+plt.fill_between(lower_series.index, 
+                 lower_series, 
+                 upper_series, 
+                 color='k', alpha=.15)
+plt.title("SARIMA - Final Forecast of -SALES")
+plt.show()
